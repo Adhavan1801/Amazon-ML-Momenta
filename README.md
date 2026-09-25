@@ -45,13 +45,3 @@ E:\hackathon\
 └── private/                           # Private notebooks/scratch (GITIGNORED)
 ```
 
-## What goes to Git vs What doesn't
-
-| Goes to Git ✅ | Gitignored ❌ |
-|---|---|
-| `src/` (all code) | `Dataset/` (raw TSVs, ~1.5GB) |
-| `configs/` | `data/processed/` (parquet files) |
-| `notebooks/` | `momenta/` (venv) |
-| `requirements.txt` | `models/` (checkpoints) |
-| `.gitignore` | `output/` (submission TSVs) |
-| `README.md` | `private/` |
