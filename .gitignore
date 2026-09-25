@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+momenta/
+.venv/
+venv/
+env/
+
+# Datasets — too large for git
+Dataset/
+data/raw/
+data/processed/*.parquet
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Output files (large)
+output/*.tsv
+
+# Private/scratch
+private/
+
+# Model checkpoints
+models/
+*.pt
+*.bin
+*.onnx

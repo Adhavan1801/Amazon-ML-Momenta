@@ -1,0 +1,25 @@
+# Entity Resolution Pipeline — Dependencies
+# Core
+pandas>=2.0
+pyarrow>=14.0       # For parquet read/write
+numpy>=1.24
+
+# Preprocessing (no additional deps needed — uses stdlib + pandas)
+
+# Blocking & Feature Engineering (install when ready for Stage 2+)
+# scikit-learn>=1.3
+# sparse-dot-topn>=1.1
+# rapidfuzz>=3.0
+# jellyfish>=1.0
+
+# Embeddings & Models (install when ready for Stage 2+)
+# sentence-transformers>=2.7
+# faiss-cpu>=1.7      # or faiss-gpu on AWS
+# torch>=2.1
+
+# Classifier
+# lightgbm>=4.0
+
+# Notebook / dev
+jupyter
+ipykernel
