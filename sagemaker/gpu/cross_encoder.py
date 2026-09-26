@@ -44,7 +44,7 @@ def train_one(a, b, y, args, dev):
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     steps = args.epochs * ((len(a) + args.bs - 1) // args.bs)
     sch = get_linear_schedule_with_warmup(opt, int(0.06 * steps), steps)
-    scaler = torch.amp.GradScaler(enabled=dev == "cuda")
+    scaler = torch.amp.GradScaler("cuda", enabled=dev == "cuda")
     lossf = torch.nn.BCEWithLogitsLoss()
     model.train()
     t = time.time()

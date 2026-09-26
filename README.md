@@ -7,10 +7,11 @@ Everything is CPU-only and uses only the challenge data (no external lookups). A
 
 ## 🏆 Model Leaderboard & Code Versions
 
-| Validation $F_{0.5}$ | Git Release Tag | Key Model Changes / Config | Experiment Folder | Output TSV |
-| :--- | :--- | :--- | :--- | :--- |
-| **`0.9777`** (97.77%) | [`f05-0.9777`](https://github.com/Adhavan1801/Amazon-ML-Momenta/releases/tag/f05-0.9777) | +7 Domain Features (name/addr token Jaccard & min overlap, prefix match, len delta, zip5) | [`experiments/f05_0.9777/`](experiments/f05_0.9777/run_info.json) | [`output/matching_results.tsv`](output/matching_results.tsv) |
-| `0.9776` (97.76%) | [`f05-0.9776`](https://github.com/Adhavan1801/Amazon-ML-Momenta/releases/tag/f05-0.9776) | Baseline XGBoost + LightGBM 2-Stage Cascade (40% S1, 900 rounds) | [`experiments/f05_0.9776/`](experiments/f05_0.9776/run_info.json) | [`output/matching_results.tsv`](output/matching_results.tsv) |
+| Validation $F_{0.5}$ | Public LB $F_{0.5}$ | Git Release Tag | Key Model Changes / Config | Experiment Folder | Output TSV |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`0.9807`** (98.07%) | **`0.9687`** | [`f05-0.9807`](https://github.com/Adhavan1801/Amazon-ML-Momenta/releases/tag/f05-0.9807) | Cross-Encoder (`xlm-roberta-base`) GPU Re-Ranking on Borderline Pairs (1:1 Blend) | [`experiments/f05_0.9807_ce/`](experiments/f05_0.9807_ce/run_info.json) | [`output/matching_results.tsv`](output/matching_results.tsv) |
+| `0.9777` (97.77%) | — | [`f05-0.9777`](https://github.com/Adhavan1801/Amazon-ML-Momenta/releases/tag/f05-0.9777) | +7 Domain Features (name/addr token Jaccard & min overlap, prefix match, len delta, zip5) | [`experiments/f05_0.9777/`](experiments/f05_0.9777/run_info.json) | [`output/matching_results.tsv`](output/matching_results.tsv) |
+| `0.9776` (97.76%) | — | [`f05-0.9776`](https://github.com/Adhavan1801/Amazon-ML-Momenta/releases/tag/f05-0.9776) | Baseline XGBoost + LightGBM 2-Stage Cascade (40% S1, 900 rounds) | [`experiments/f05_0.9776/`](experiments/f05_0.9776/run_info.json) | [`output/matching_results.tsv`](output/matching_results.tsv) |
 
 > **Tip to checkout exact code for a score:**
 > ```bash

@@ -1,9 +1,10 @@
 {
-  "f05_score": 0.9777354711396188,
-  "f05_single_threshold_score": 0.9775179146861582,
-  "model_stage": "p2 (Stage 2 LightGBM Re-Ranker with 7 New Domain Features)",
+  "f05_score": 0.9806848945388073,
+  "f05_heldout_base_score": 0.9767881056451698,
+  "public_leaderboard_score": 0.968736,
+  "model_stage": "Stage 4.3 Cross-Encoder (xlm-roberta-base) 1:1 Blend with LightGBM",
+  "oof_auc_borderline": 0.8540,
   "exclusive_match_rule": true,
-  "first_match_threshold": 0.525,
-  "extra_match_threshold": 0.7,
-  "single_threshold": 0.65
+  "threshold": 0.600,
+  "lgbm_stage2_f05": 0.9777354711396188
 }
