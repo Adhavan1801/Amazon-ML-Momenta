@@ -1,123 +1,101 @@
-# Entity Resolution Pipeline — Multi-Stage Hybrid Architecture
+# Business Entity Resolution — High Performance Pipeline & System Architecture
 
-> A high-performance, scalable entity resolution framework designed for multi-source business record deduplication and entity matching.
-
----
-
-## Architecture & System Design
-
-The system employs a multi-stage funnel architecture designed to reduce candidate search complexity while maximizing precision under the $F_{0.5}$ metric:
-
-```
-[ Raw Source Datasets (S1, S2, S3) ]
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│ Stage 0: Data Preprocessing & Normalization             │
-│ • Legal Suffix Removal (Inc, LLC, Ltd, Pvt, etc.)       │
-│ • Address Standardization (Road, Street, Avenue)        │
-│ • Extraction of Postal Codes, Street Numbers & States   │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│ Stage 1: Candidate Generation (Blocking)                │
-│ • Dense Retrieval: Bi-Encoder (multilingual-e5-small)   │
-│ • Vector Indexing: GPU FAISS Approximate Search (Top-K) │
-│ • Sparse Retrieval: TF-IDF & Character N-gram Indexing  │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│ Stage 2: Pairwise Feature Engineering                   │
-│ • String Distance Metrics: Jaro-Winkler, Levenshtein    │
-│ • Token Overlap: Token-Sort & Token-Set Similarity      │
-│ • Structured Attribute Flags: Country, Postal, House #  │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│ Stage 3: Supervised Classification & Reranking           │
-│ • Model: Gradient Boosted Decision Trees (LightGBM)     │
-│ • Optimization: Continuous Match Probability Scoring    │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│ Stage 4: Precision Filtering & Threshold Calibration     │
-│ • Decision Threshold Tuning for F0.5 Score              │
-│ • Rule-Based Constraint Shields (Country/House Mismatch)│
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-[ Output: matching_results.tsv & candidate_pairs.tsv ]
-```
+Pipeline: **clean → shortlist (blocking) → prune → features → 2-stage LightGBM + XGBoost → decide**.
+Everything is CPU-only and uses only the challenge data (no external lookups). All libraries are MIT, BSD or Apache-2.0.
 
 ---
 
-## Mathematical Objective ($F_{0.5}$ Metric)
-
-Evaluation is performed using the $F_{0.5}$ score, which places a higher weighting on Precision relative to Recall:
-
-$$F_{0.5} = \frac{(1 + 0.5^2) \cdot \text{Precision} \cdot \text{Recall}}{0.5^2 \cdot \text{Precision} + \text{Recall}} = \frac{1.25 \cdot \text{Precision} \cdot \text{Recall}}{0.25 \cdot \text{Precision} + \text{Recall}}$$
-
-To optimize for this objective, the post-processing pipeline enforces strict precision constraints via rule-based veto filters and calibrated probability boundaries.
-
----
-
-## Directory Structure
-
-```
-.
-├── configs/                             # Configuration and path definitions
-│   ├── paths.py
-│   └── sagemaker_config.py
-├── src/                                 # Core source code
-│   ├── preprocessing/                   # Data normalization and feature cleaning
-│   │   ├── normalize.py
-│   │   ├── constants.py
-│   │   └── run_preprocessing.py
-│   ├── blocking/                        # Candidate generation and index search
-│   │   └── hybrid_blocking.py
-│   ├── matching/                        # Pairwise feature extraction & modeling
-│   │   ├── feature_extraction.py
-│   │   ├── train_classifier.py
-│   │   └── predict_submission.py
-│   ├── run_pipeline.py                  # Pipeline execution CLI
-│   └── validate_submission.py           # Submission format validator
-├── notebooks/                           # Execution notebooks and cloud scripts
-│   ├── hybrid_funnel_entity_resolution.ipynb
-│   └── hybrid_funnel_entity_resolution.py
-├── requirements.txt                     # Project dependencies
-└── README.md                            # Documentation
-```
-
----
-
-## Usage & Execution
-
-### Local Command Line Execution
-
-```powershell
-# Subsampled run (for fast validation)
-.\momenta\Scripts\python.exe src/run_pipeline.py --sample_size 10000 --top_k 5
-
-# Full dataset execution
-.\momenta\Scripts\python.exe src/run_pipeline.py --top_k 5
-```
-
-### Cloud GPU Execution (AWS SageMaker)
-
-Execute `notebooks/hybrid_funnel_entity_resolution.ipynb` or run the standalone script:
+## 1. Setup (once)
 
 ```bash
-python notebooks/hybrid_funnel_entity_resolution.py
+# Python 3.11
+python -m venv .venv
+# Windows: .venv\Scripts\activate      Linux/Mac: source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### Submission Validation
+---
 
-Verify output schema compliance:
+## 2. Run Everything (One Command)
+
+```bash
+python src/run_all.py \
+  --data  <...>/student_resource/dataset \
+  --work  <scratch folder, needs ~40 GB free> \
+  --out   <folder for the two output .tsv files> \
+  --mem-gb 32 --threads 20 \
+  --validate <...>/student_resource/utils/validate_submission.py
+```
+
+Example on Windows PC:
 
 ```powershell
-python src/validate_submission.py
+python src\run_all.py --data D:\ml\student_resource\dataset `
+  --work D:\ml\work --out D:\ml\output --mem-gb 32 --threads 20 `
+  --validate D:\ml\student_resource\utils\validate_submission.py
 ```
+
+- The default settings reproduce our best submission: XGBoost+LightGBM stage 1 on 40% of S1, 900 rounds; stage 2 with top-30 stage-1 features; pruner keeps 20 per S1 plus 3 per record ($F_{0.5} = 0.9776$).
+- Hyperparameters can be adjusted via `--no-xgb --s1-pct --s1-rounds --s2-topk --prune-k --prune-krev --prune-pmin --prune-load-k`.
+- `--mem-gb`: Set to machine RAM. With $\ge 24$, the pipeline uses bigger, faster chunks.
+- `--threads`: CPU threads to use (default: all cores).
+- **Resume Capability:** Each finished step leaves a marker in `<work>/_done/`. If a run stops or restarts, re-running the command resumes where it left off.
+
+**Output:** `<out>/matching_results.tsv` and `<out>/candidate_pairs.tsv`.
+
+---
+
+## 3. Pipeline Steps (`run_all.py` Execution Flow)
+
+| Step | Command (`python src/cli.py …`) | Reads → Writes | Typical Time |
+|---|---|---|---|
+| convert | `convert` | dataset `.tsv` → `work/data/*.parquet` | ~1 min |
+| dict | `dict` | train pairs → `artifacts/indic_dict.json` (Indic→Latin words) | ~1 min |
+| prep_train / prep_test | `prep train` / `prep test` | normalized names and addresses → `work/{split}_recs.parquet` | ~2 min |
+| gtidx | `gtidx` | ground truth → `work/train_gt_idx.parquet` | <1 min |
+| tokens_* | `tokens train` / `tokens test` | typed tokens + idf index → `work/{split}_tok/` | ~3 min |
+| block_*_<country>, finish_* | `block train india` … | candidate pairs → `work/{split}_pairs/pairs_<country>.parquet` | ~10 min |
+| prune_train / prune_test | `prune train` / `prune test` | pruner LightGBM, ~5.5 candidates per S1 → `work/{split}_pruned/` | ~4 min |
+| recall | `recall` | prints candidate recall ceiling after blocking and pruning | <1 min |
+| recfeat_*, feats_*_<country> | `recfeat train`, `feats train india` … | ~76 pair features → `work/{split}_feats/` | ~10 min |
+| ctx_* | `ctx train` / `ctx test` | rank/gap context features → `work/{split}_ctx/` | ~2 min |
+| train1, pred1_train | `train1`, `pred1 train` | stage-1 LightGBM (2 folds) + out-of-fold p1 | ~5 min |
+| train2, eval | `train2`, `eval` | stage-2 LightGBM + threshold tuned on held-out macro F0.5 | ~5 min |
+| pred1_test, predict | `pred1 test`, `predict` | final `matching_results.tsv` + `candidate_pairs.tsv` | ~5 min |
+
+---
+
+## 4. Partial Re-execution
+
+```bash
+python src/run_all.py ... --list                 # shows steps and status
+python src/run_all.py ... --from feats_train_india   # re-run from a step onward
+python src/run_all.py ... --only eval            # re-run single step
+```
+
+| Modified File | Re-run starting from |
+|---|---|
+| `normalize.py` (cleaning rules) | `prep_train` |
+| `block.py` (candidate shortlisting) | `tokens_train` |
+| `prune.py` (pruner model) | `prune_train` (delete `work/artifacts/pruner.txt`) |
+| `feat.py` (pair similarity features) | `recfeat_train` |
+| `model.py` (models, thresholding) | `train1` |
+
+---
+
+## 5. Codebase Overview (`src/`)
+
+| File | Functionality |
+|---|---|
+| `config.py` | Environment configurations and resource memory knobs |
+| `run_all.py` / `cli.py` | Pipeline orchestrator and CLI entry points |
+| `data.py` | Data format conversion (TSV $\leftrightarrow$ Parquet) |
+| `normalize.py` | Text normalization: Indic→Latin transliteration, legal form cleaning, address standardization |
+| `learn_dict.py` | Learns Indic-script to Latin dictionary mappings from training ground truth |
+| `prep.py` | Parallel dataset preparation and text cleaning |
+| `block.py` | Token blocking using typed hashing and inverted indices |
+| `prune.py` | LightGBM candidate pair pruning model |
+| `feat.py` | High-dimensional string/token distance features (RapidFuzz) |
+| `stages.py` | Memory-bounded chunk processing stages |
+| `model.py` | Stage-1 & Stage-2 LightGBM model training, re-ranking, and threshold tuning |
+| `metrics.py` | Macro $F_{0.5}$ evaluation metric calculator |

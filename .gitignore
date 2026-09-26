@@ -1,23 +1,36 @@
-# Byte-compiled / optimized / DLL files
+# Python & Byte-compiled
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environment
+# Virtual environments
 momenta/
 .venv/
 venv/
 env/
+*.venv
 
-# Datasets — too large for git
+# Datasets, intermediate work, and output files
 Dataset/
+dataset/
 data/raw/
 data/processed/*.parquet
+work/
+output/
+artifacts/
+*.parquet
+*.tsv
+*.bin
+*.pkl
+*.model
+*.npy
+*.pt
+*.onnx
+*.txt
+!requirements.txt
 
-# Jupyter checkpoints
+# Jupyter & IDE
 .ipynb_checkpoints/
-
-# IDE
 .vscode/
 .idea/
 *.swp
@@ -27,16 +40,6 @@ data/processed/*.parquet
 __MACOSX/
 Thumbs.db
 
-# Output files (large)
-output/*.tsv
-
-# Private/scratch
+# Private/scratch & models
 private/
-
-# Model checkpoints & numpy caches
 models/
-*.pt
-*.bin
-*.onnx
-*.npy
-*.pkl
