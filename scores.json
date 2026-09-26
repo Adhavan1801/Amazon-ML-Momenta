@@ -1,7 +1,6 @@
 {
   "f05_score": 0.9806848945388073,
   "f05_heldout_base_score": 0.9767881056451698,
-  "public_leaderboard_score": 0.968736,
   "model_stage": "Stage 4.3 Cross-Encoder (xlm-roberta-base) 1:1 Blend with LightGBM",
   "oof_auc_borderline": 0.8540,
   "exclusive_match_rule": true,

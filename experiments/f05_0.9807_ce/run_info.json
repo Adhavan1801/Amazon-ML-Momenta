@@ -1,7 +1,6 @@
 {
   "f05_heldout_blend_score": 0.9806848945388073,
   "f05_heldout_base_score": 0.9767881056451698,
-  "public_leaderboard_score": 0.968736,
   "git_tag": "f05-0.9807-ce",
   "description": "Cross-Encoder (xlm-roberta-base) 2-fold neural re-ranking on borderline pairs blended 1:1 with LightGBM stage-2 scores",
   "command": "python sagemaker/gpu/cross_encoder.py --dir D:\\ml\\work\\borderline --model xlm-roberta-base --bs 32 && python src/cli.py combine",
@@ -16,7 +15,6 @@
   },
   "metrics": {
     "oof_auc_borderline": 0.8540,
-    "heldout_val_f05": 0.9807,
-    "public_lb_f05": 0.968736
+    "heldout_val_f05": 0.9807
   }
 }
