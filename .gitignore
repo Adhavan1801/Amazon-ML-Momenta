@@ -33,8 +33,10 @@ output/*.tsv
 # Private/scratch
 private/
 
-# Model checkpoints
+# Model checkpoints & numpy caches
 models/
 *.pt
 *.bin
 *.onnx
+*.npy
+*.pkl
