@@ -1,0 +1,20 @@
+{
+  "f05_score": 0.9775833354517283,
+  "git_tag": "f05-0.9776",
+  "commit": "cdc3f8e",
+  "description": "Baseline XGBoost + LightGBM 2-Stage Cascade (40% S1 sample, 900 rounds)",
+  "command": "python src/run_all.py --data D:\\ml\\student_resource\\dataset --work D:\\ml\\work --out D:\\ml\\output --mem-gb 32 --threads 20 --validate D:\\ml\\student_resource\\utils\\validate_submission.py",
+  "hyperparameters": {
+    "s1_pct": 40,
+    "s1_rounds": 900,
+    "s2_topk": 30,
+    "prune_k": 20,
+    "prune_krev": 3,
+    "prune_pmin": 0.002
+  },
+  "metrics": {
+    "first_match_threshold": 0.55,
+    "extra_match_threshold": 0.725,
+    "single_threshold": 0.675
+  }
+}
