@@ -70,7 +70,17 @@ def pair_features(P: pl.DataFrame, recs: pl.DataFrame, pos=None) -> pl.DataFrame
         "nn_i": g("nnums_l", I), "nn_j": g("nnums_l", J),
         "lg_i": g("legal_l", I), "lg_j": g("legal_l", J),
         "st_i": g("state", I), "st_j": g("state", J),
+        "nc_i": g("name_core", I), "nc_j": g("name_core", J),
+        "ac_i": g("addr_core", I), "ac_j": g("addr_core", J),
     })
+    X = X.with_columns(
+        pl.col("nc_i").str.split(" ").alias("ntoks_i"),
+        pl.col("nc_j").str.split(" ").alias("ntoks_j"),
+        pl.col("ac_i").str.split(" ").alias("atoks_i"),
+        pl.col("ac_j").str.split(" ").alias("atoks_j"),
+        pl.col("nums_i").list.eval(pl.element().filter(pl.element().str.contains(r"^\d{5,6}$"))).alias("zips_i"),
+        pl.col("nums_j").list.eval(pl.element().filter(pl.element().str.contains(r"^\d{5,6}$"))).alias("zips_j"),
+    )
     X = X.select(
         pl.col("nums_i").list.len().alias("nnum_i"), pl.col("nums_j").list.len().alias("nnum_j"),
         pl.col("nums_i").list.set_intersection("nums_j").list.len().alias("num_inter"),
@@ -86,8 +96,22 @@ def pair_features(P: pl.DataFrame, recs: pl.DataFrame, pos=None) -> pl.DataFrame
         (pl.col("lg_j").list.len() > 0).cast(pl.Int8).alias("legal_j"),
         pl.when((pl.col("st_i") != "") & (pl.col("st_j") != ""))
           .then((pl.col("st_i") == pl.col("st_j")).cast(pl.Int8) * 2 - 1).otherwise(0).alias("state_match"),
+        (pl.col("ntoks_i").list.set_intersection("ntoks_j").list.len() / 
+         pl.max_horizontal(pl.col("ntoks_i").list.set_union("ntoks_j").list.len(), pl.lit(1))).cast(pl.Float32).alias("name_tok_jac"),
+        (pl.col("ntoks_i").list.set_intersection("ntoks_j").list.len() / 
+         pl.max_horizontal(pl.min_horizontal(pl.col("ntoks_i").list.len(), pl.col("ntoks_j").list.len()), pl.lit(1))).cast(pl.Float32).alias("name_tok_min_ov"),
+        (pl.col("atoks_i").list.set_intersection("atoks_j").list.len() / 
+         pl.max_horizontal(pl.col("atoks_i").list.set_union("atoks_j").list.len(), pl.lit(1))).cast(pl.Float32).alias("addr_tok_jac"),
+        (pl.col("atoks_i").list.set_intersection("atoks_j").list.len() / 
+         pl.max_horizontal(pl.min_horizontal(pl.col("atoks_i").list.len(), pl.col("atoks_j").list.len()), pl.lit(1))).cast(pl.Float32).alias("addr_tok_min_ov"),
+        ((pl.col("nc_i").str.slice(0, 3) == pl.col("nc_j").str.slice(0, 3)) & (pl.col("nc_i").str.len_bytes() >= 3)).cast(pl.Int8).alias("prefix3_match"),
+        (pl.col("nc_i").str.len_bytes().cast(pl.Int32) - pl.col("nc_j").str.len_bytes().cast(pl.Int32)).abs().cast(pl.Float32).alias("name_char_len_diff"),
+        pl.when((pl.col("zips_i").list.len() > 0) & (pl.col("zips_j").list.len() > 0))
+          .then((pl.col("zips_i").list.set_intersection("zips_j").list.len() > 0).cast(pl.Int8) * 2 - 1)
+          .otherwise(0).alias("zip5_match"),
     ).with_columns(
-        (pl.col("num_inter") / pl.max_horizontal(pl.col("nnum_i"), pl.col("nnum_j"), pl.lit(1))).alias("num_jac"))
+        (pl.col("num_inter") / pl.max_horizontal(pl.col("nnum_i"), pl.col("nnum_j"), pl.lit(1))).cast(pl.Float32).alias("num_jac"))
+
 
     R = pl.DataFrame({
         "src_j": g("src", J), "is_dom_j": g("is_dom", J), "is_indic_j": g("is_indic", J),

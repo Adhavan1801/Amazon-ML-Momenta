@@ -1,9 +1,9 @@
 {
-  "f05_score": 0.9775833354517283,
-  "f05_single_threshold_score": 0.9773432919033166,
-  "model_stage": "p2 (Stage 2 LightGBM Re-Ranker)",
+  "f05_score": 0.9777354711396188,
+  "f05_single_threshold_score": 0.9775179146861582,
+  "model_stage": "p2 (Stage 2 LightGBM Re-Ranker with 7 New Domain Features)",
   "exclusive_match_rule": true,
-  "first_match_threshold": 0.55,
-  "extra_match_threshold": 0.725,
-  "single_threshold": 0.675
+  "first_match_threshold": 0.525,
+  "extra_match_threshold": 0.7,
+  "single_threshold": 0.65
 }
