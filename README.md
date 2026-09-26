@@ -1,157 +1,123 @@
-# 🚀 Entity Resolution Pipeline — Multi-Stage Hybrid Funnel (SOTA Architecture)
+# Entity Resolution Pipeline — Multi-Stage Hybrid Architecture
 
-> **Optimized for Maximum $F_{0.5}$ Precision Metric (99%+ Precision Target)**
-> 
-> High-performance, scalable entity resolution pipeline built for business entity deduplication and record matching across multi-source datasets.
+> A high-performance, scalable entity resolution framework designed for multi-source business record deduplication and entity matching.
 
 ---
 
-## 📐 Pipeline Architecture
+## Architecture & System Design
+
+The system employs a multi-stage funnel architecture designed to reduce candidate search complexity while maximizing precision under the $F_{0.5}$ metric:
 
 ```
-[ Raw Business Records (S1, S2, S3) ]
+[ Raw Source Datasets (S1, S2, S3) ]
                  │
                  ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Stage 0: Data Preprocessing & Normalization             │
-│ • Legal suffix stripping (Inc, LLC, Ltd, Pvt)          │
-│ • Road abbreviation expansion (Rd -> Road, St -> Street)│
-│ • Extraction of House Numbers, Postal Codes, States     │
+│ • Legal Suffix Removal (Inc, LLC, Ltd, Pvt, etc.)       │
+│ • Address Standardization (Road, Street, Avenue)        │
+│ • Extraction of Postal Codes, Street Numbers & States   │
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Stage 1: Hybrid Candidate Blocking (Recall > 98%)       │
-│ • Dense Embeddings: intfloat/multilingual-e5-small      │
-│ • Vector Indexing: GPU FAISS IndexFlatIP (Top-K = 5/10) │
-│ • Sparse Indexing: BM25 / TF-IDF Token Matching          │
+│ Stage 1: Candidate Generation (Blocking)                │
+│ • Dense Retrieval: Bi-Encoder (multilingual-e5-small)   │
+│ • Vector Indexing: GPU FAISS Approximate Search (Top-K) │
+│ • Sparse Retrieval: TF-IDF & Character N-gram Indexing  │
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Stage 2: Pairwise Feature Engineering Engine            │
-│ • Jaro-Winkler, Levenshtein, Token-Sort Ratio           │
-│ • Address Jaro-Winkler & Token-Set Overlap              │
-│ • Attribute Match Flags: Country, Postal, House Number  │
+│ Stage 2: Pairwise Feature Engineering                   │
+│ • String Distance Metrics: Jaro-Winkler, Levenshtein    │
+│ • Token Overlap: Token-Sort & Token-Set Similarity      │
+│ • Structured Attribute Flags: Country, Postal, House #  │
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Stage 3: GBDT Classifier (LightGBM)                     │
-│ • Trained on Ground Truth positive/negative pairs       │
-│ • Outputs continuous match probabilities p in [0.0, 1.0] │
+│ Stage 3: Supervised Classification & Reranking           │
+│ • Model: Gradient Boosted Decision Trees (LightGBM)     │
+│ • Optimization: Continuous Match Probability Scoring    │
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Stage 4: F0.5 Calibration & Hard Veto Shield           │
-│ • Hard Veto 1: Reject explicit Country mismatches       │
-│ • Hard Veto 2: Reject House Number mismatches            │
-│ • Hard Veto 3: Reject Low Jaro-Winkler similarity (<0.40)│
-│ • Calibrate Threshold for F0.5 (T >= 0.88 - 0.95)       │
+│ Stage 4: Precision Filtering & Threshold Calibration     │
+│ • Decision Threshold Tuning for F0.5 Score              │
+│ • Rule-Based Constraint Shields (Country/House Mismatch)│
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
-[ Final Output: matching_results.tsv & candidate_pairs.tsv ]
+[ Output: matching_results.tsv & candidate_pairs.tsv ]
 ```
 
 ---
 
-## 🎯 Strategies to Reach 99%+ $F_{0.5}$ Score
+## Mathematical Objective ($F_{0.5}$ Metric)
 
-The $F_{0.5}$ score penalizes False Positives **4x more heavily** than False Negatives:
+Evaluation is performed using the $F_{0.5}$ score, which places a higher weighting on Precision relative to Recall:
 
-$$F_{0.5} = \frac{5 \cdot \text{Precision} \cdot \text{Recall}}{4 \cdot \text{Precision} + \text{Recall}}$$
+$$F_{0.5} = \frac{(1 + 0.5^2) \cdot \text{Precision} \cdot \text{Recall}}{0.5^2 \cdot \text{Precision} + \text{Recall}} = \frac{1.25 \cdot \text{Precision} \cdot \text{Recall}}{0.25 \cdot \text{Precision} + \text{Recall}}$$
 
-To achieve **99%+ $F_{0.5}$ accuracy**:
-
-1. **Precision-First Threshold Tuning**: Threshold calibration sets $T^* \ge 0.88 - 0.95$, pushing Precision above 99% while preserving high candidate recall.
-2. **Hard Veto Shield**: 
-   - **Country Veto**: Rejects matches when entity countries explicitly conflict.
-   - **House Number Veto**: Rejects matches with conflicting street digits unless name similarity is $> 0.85$.
-   - **Low Similarity Veto**: Instantly drops low Jaro-Winkler name pairs.
-3. **Multi-Feature Pair Representation**: Combines 12 fine-grained string, token, and attribute metrics with dense transformer embeddings.
+To optimize for this objective, the post-processing pipeline enforces strict precision constraints via rule-based veto filters and calibrated probability boundaries.
 
 ---
 
-## 📂 Project Structure
+## Directory Structure
 
 ```
-E:\hackathon\
-├── README.md                            # Complete Project Documentation
-├── requirements.txt                     # Project Dependencies
-├── .gitignore                           # Git Exclusion Rules
-│
-├── configs/                             # Path & Configuration Settings
-│   ├── paths.py                         # Central file path definitions
-│   └── sagemaker_config.py              # AWS SageMaker setup settings
-│
-├── src/                                 # Modular Pipeline Source Code
-│   ├── preprocessing/                   # Stage 0: Cleaning & Normalization
-│   │   ├── normalize.py                 # Core text, name & address cleaners
-│   │   ├── constants.py                 # Legal suffixes, abbreviation maps
-│   │   └── run_preprocessing.py         # Batch dataset preprocessor
-│   │
-│   ├── blocking/                        # Stage 1: Candidate Generation
-│   │   └── hybrid_blocking.py           # E5 embeddings + FAISS GPU index
-│   │
-│   ├── matching/                        # Stage 2-4: Feature Eng & Classifier
-│   │   ├── feature_extraction.py        # Pairwise distance metric calculator
-│   │   ├── train_classifier.py          # LightGBM training & F0.5 tuning
-│   │   └── predict_submission.py        # Hard veto shield & TSV formatter
-│   │
-│   ├── run_pipeline.py                  # Master Pipeline Runner CLI
-│   └── validate_submission.py           # Submission Format Validator
-│
-├── notebooks/                           # Execution Notebooks & Scripts
-│   ├── hybrid_funnel_entity_resolution.ipynb # SageMaker GPU Notebook
-│   └── hybrid_funnel_entity_resolution.py    # Standalone SageMaker Script
-│
-├── data/                                # Processed Data (Parquet)
-├── models/                              # Saved Checkpoint Models (.pkl)
-└── output/                              # Generated Submission TSVs
-    ├── matching_results.tsv
-    └── candidate_pairs.tsv
+.
+├── configs/                             # Configuration and path definitions
+│   ├── paths.py
+│   └── sagemaker_config.py
+├── src/                                 # Core source code
+│   ├── preprocessing/                   # Data normalization and feature cleaning
+│   │   ├── normalize.py
+│   │   ├── constants.py
+│   │   └── run_preprocessing.py
+│   ├── blocking/                        # Candidate generation and index search
+│   │   └── hybrid_blocking.py
+│   ├── matching/                        # Pairwise feature extraction & modeling
+│   │   ├── feature_extraction.py
+│   │   ├── train_classifier.py
+│   │   └── predict_submission.py
+│   ├── run_pipeline.py                  # Pipeline execution CLI
+│   └── validate_submission.py           # Submission format validator
+├── notebooks/                           # Execution notebooks and cloud scripts
+│   ├── hybrid_funnel_entity_resolution.ipynb
+│   └── hybrid_funnel_entity_resolution.py
+├── requirements.txt                     # Project dependencies
+└── README.md                            # Documentation
 ```
 
 ---
 
-## 💻 Execution Guide
+## Usage & Execution
 
-### Option 1: Local Terminal Execution (Windows / Linux)
-
-Run the full pipeline using your virtual environment:
+### Local Command Line Execution
 
 ```powershell
-# Fast Test Run (Subsampled queries for rapid testing)
+# Subsampled run (for fast validation)
 .\momenta\Scripts\python.exe src/run_pipeline.py --sample_size 10000 --top_k 5
 
-# Full Dataset Pipeline Execution
+# Full dataset execution
 .\momenta\Scripts\python.exe src/run_pipeline.py --top_k 5
 ```
 
-### Option 2: AWS SageMaker GPU Execution
+### Cloud GPU Execution (AWS SageMaker)
 
-Run directly on SageMaker GPU (`ml.g5.8xlarge` / `ml.g4dn.xlarge`):
+Execute `notebooks/hybrid_funnel_entity_resolution.ipynb` or run the standalone script:
 
 ```bash
-# Open hybrid_funnel_entity_resolution.ipynb in SageMaker Studio and run all cells
-# Or run via terminal:
 python notebooks/hybrid_funnel_entity_resolution.py
 ```
 
-### Option 3: Validate Output Submission Format
+### Submission Validation
 
-Run the official validator script on generated TSV files:
+Verify output schema compliance:
 
 ```powershell
 python src/validate_submission.py
 ```
-
----
-
-## 🏆 Benchmark & Validation Summary
-
-- **Train/Test Integrity**: 100% row preservation across all raw TSVs (2.2M Train S1, 5.0M Train S2, 5.2M Train S3).
-- **Validation Score**: Achieves **$F_{0.5} \ge 0.94 - 0.97+$** on validation ground truth.
-- **Output Compliance**: Validated TAB-separated format (`matching_results.tsv` & `candidate_pairs.tsv`).
