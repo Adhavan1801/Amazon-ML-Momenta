@@ -16,7 +16,6 @@ dataset/
 data/raw/
 data/processed/*.parquet
 work/
-output/
 artifacts/
 *.parquet
 *.tsv
@@ -28,6 +27,10 @@ artifacts/
 *.onnx
 *.txt
 !requirements.txt
+
+# Allow final matching results TSV
+output/candidate_pairs.tsv
+!output/matching_results.tsv
 
 # Jupyter & IDE
 .ipynb_checkpoints/
